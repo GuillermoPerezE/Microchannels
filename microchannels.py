@@ -2,6 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class Microchannel:
     # hidden properties
     __Dh = 0
@@ -27,9 +28,10 @@ class Microchannel:
     __Sgenff = 0
     __Omega = 0
     __Be = 0
+
     def __init__(self):
 
-#Geometry properties
+        # Geometry properties
         self.Wd = 51e-3
         self.Ld = 51e-3
         self.Wi = 51e-3
@@ -41,7 +43,7 @@ class Microchannel:
         self.alphac = 0
         self.beta = 0
         self.N = 0
-#Fluid properties
+        # Fluid properties
         self.Ta = 300
         self.G = 7e-3
         self.nu = 1.58e-5
@@ -54,46 +56,46 @@ class Microchannel:
         self.Uavg = 0
         self.Regime = 'laminar'
         self.ReDh = 0
-# Material properties
+        # Material properties
         self.RicondA = 2.75e-4
         self.k = 148
         self.q = 15e4
-# Performance parameters
+        # Performance parameters
         self.Req = 0
         self.DeltaP = 0
         self.Sgen = 0
 
     def warning(prop):
-        return 'You cannot set ',prop,' explicitly'
+        return 'You cannot set ', prop, ' explicitly'
 
     def soundspeed(self):
         self.__csound = (self.gamma * self.Rgas * self.Ta) ** (1 / 2)
         return self.__csound
 
     def alphasubc(self):
-        self.alphac = 2*self.wc/self.Hc
+        self.alphac = 2 * self.wc / self.Hc
         return self.alphac
 
     def fbeta(self):
-        self.beta= self.wc/self.ww
+        self.beta = self.wc / self.ww
         return self.beta
 
     def numberchannels(self):
-        self.N = round(((self.Wd/2)-self.ww)/(self.wc + self.ww))
+        self.N = round(((self.Wd / 2) - self.ww) / (self.wc + self.ww))
         return self.N
 
     def hidraulicd(self):
-        ac = 2*self.wc*self.Hc
-        p = 2*(self.Hc + 2*self.wc)
-        self.__Dh = 4*ac/p
+        ac = 2 * self.wc * self.Hc
+        p = 2 * (self.Hc + 2 * self.wc)
+        self.__Dh = 4 * ac / p
         return self.__Dh
 
     def massflow(self):
-        self.__mdot = self.rho * self.G / (2*self.numberchannels())
+        self.__mdot = self.rho * self.G / (2 * self.numberchannels())
         return self.__mdot
 
     def flowavv(self):
-        self.Uavg = self.massflow() / (self.rho*self.wc*self.Hc)
+        self.Uavg = self.massflow() / (self.rho * self.wc * self.Hc)
         return self.Uavg
 
     def machnum(self):
@@ -101,7 +103,7 @@ class Microchannel:
         return self.__Ma
 
     def reynolds(self):
-        self.ReDh = (self.hidraulicd()*self.flowavv()) / self.nu
+        self.ReDh = (self.hidraulicd() * self.flowavv()) / self.nu
         return self.ReDh
 
     def lsa(self):
@@ -123,17 +125,19 @@ class Microchannel:
 
     def frictionf(self):
         if (self.Regime == 'laminar'):
-            B = ((self.alphasubc()**2)+1) / ((self.alphasubc() + 1)**2)
-            self.__f = ((3.2*(self.reynolds()*self.hidraulicd()/self.Ld)**(0.57))**2 + (4.7 + 19.64 * B)**2)**(1/2) / self.reynolds()
+            B = ((self.alphasubc() ** 2) + 1) / ((self.alphasubc() + 1) ** 2)
+            self.__f = ((3.2 * (self.reynolds() * self.hidraulicd() / self.Ld) ** (0.57)) ** 2 + (
+                        4.7 + 19.64 * B) ** 2) ** (1 / 2) / self.reynolds()
         else:
-            self.__f = 1 / (0.79*np.log(self.reynolds())-1.64)**2
+            self.__f = 1 / (0.79 * np.log(self.reynolds()) - 1.64) ** 2
         return self.__f
 
     def nusseltnum(self):
         if (self.Regime == 'laminar'):
-            self.__NuDh = 2.253 + 8.164 * (1 / (self.alphasubc() + 1))**(1.5)
+            self.__NuDh = 2.253 + 8.164 * (1 / (self.alphasubc() + 1)) ** (1.5)
         else:
-            self.__NuDh = (self.frictionf() / 2) * (self.reynolds()-1000) * self.Pr / (1 + 12.7 * (self.frictionf() / 2)**(0.5) * (self.Pr **(2/3) - 1 ))
+            self.__NuDh = (self.frictionf() / 2) * (self.reynolds() - 1000) * self.Pr / (
+                        1 + 12.7 * (self.frictionf() / 2) ** (0.5) * (self.Pr ** (2 / 3) - 1))
         return self.__NuDh
 
     def convection(self):
@@ -141,8 +145,8 @@ class Microchannel:
         return self.__havg
 
     def fineff(self):
-        mhc = np.sqrt(2 * (2 * self.ww + self.Ld)*self.convection()/(self.k * 2 * self.ww * self.Ld)) * self.Hc
-        self.__etap = np.tanh(mhc)/mhc
+        mhc = np.sqrt(2 * (2 * self.ww + self.Ld) * self.convection() / (self.k * 2 * self.ww * self.Ld)) * self.Hc
+        self.__etap = np.tanh(mhc) / mhc
         return self.__etap
 
     def interfresis(self):
@@ -150,7 +154,8 @@ class Microchannel:
         return self.__Ri
 
     def convresis(self):
-        self.__Rconv = 1 / (2 * (self.numberchannels() + 1) * self.convection() * self. fineff() * self.Hc * self.Ld + 2 * self.numberchannels() * self.convection() * self.wc * self.Ld)
+        self.__Rconv = 1 / (2 * (
+                    self.numberchannels() + 1) * self.convection() * self.fineff() * self.Hc * self.Ld + 2 * self.numberchannels() * self.convection() * self.wc * self.Ld)
         return self.__Rconv
 
     def fluidres(self):
@@ -166,7 +171,7 @@ class Microchannel:
         bi = 1 / (math.pi * self.k * b * ro)
         lambdac = math.pi + 1 / (np.sqrt(math.pi) * epsilon)
         phic = (np.tanh(lambdac * tau) + lambdac / bi) / (1 + lambdac * np.tanh(lambdac * tau) / bi)
-        psiavg = epsilon * tau / np.sqrt(math.pi) + 0.5 * phic * (1 - epsilon)**(3/2)
+        psiavg = epsilon * tau / np.sqrt(math.pi) + 0.5 * phic * (1 - epsilon) ** (3 / 2)
         self.__Rb = psiavg / np.sqrt(math.pi) * self.k * a
         return self.__Rb
 
@@ -191,8 +196,8 @@ class Microchannel:
         return self.__Ti
 
     def pressdrop(self):
-        kce = 1.79 - 2.32 * (self.fbeta() / (1 + self.fbeta())) + 0.53 * (self.fbeta() / (1 + self.fbeta()))**2
-        self.DeltaP = 0.5 * self.rho * self.flowavv()**2 * (self.frictionf() * (self.Ld / self.hidraulicd()) + kce)
+        kce = 1.79 - 2.32 * (self.fbeta() / (1 + self.fbeta())) + 0.53 * (self.fbeta() / (1 + self.fbeta())) ** 2
+        self.DeltaP = 0.5 * self.rho * self.flowavv() ** 2 * (self.frictionf() * (self.Ld / self.hidraulicd()) + kce)
         return self.DeltaP
 
     def flowpp(self):
@@ -200,7 +205,7 @@ class Microchannel:
         return self.__Omega
 
     def egrdht(self):
-        self.__Sgenht = (self.tht()**2) * self.eqres() / (self.Ta * self.inttemp())
+        self.__Sgenht = (self.tht() ** 2) * self.eqres() / (self.Ta * self.inttemp())
         return self.__Sgenht
 
     def egrdff(self):
@@ -219,21 +224,23 @@ class Microchannel:
         sgenp = np.arange(100)
         alphap = np.arange(100)
         betap = np.arange(100)
-        sgenp = sgenp.astype(np.float)
-        alphap = alphap.astype(np.float)
-        betap = betap.astype(np.float)
+        sgenp = sgenp.astype(float)
+        alphap = alphap.astype(float)
+        betap = betap.astype(float)
         for x in range(100):
             self.wc = (250e-6 / 2) - (x * 1e-6)
             sgenp[x] = self.tegr()
             alphap[x] = self.alphac
             betap[x] = self.beta
-        plt.axes(projection='3d')
-        plt.xlabel('Alpha')
-        plt.ylabel('Beta')
-        plt.plot(alphap,betap,sgenp)
+        ax = plt.axes(projection='3d')
+        plt.xlabel(r'$\alpha$')
+        plt.ylabel(r'$\beta$')
+        ax.set_zlabel(r'$\dot{S}_{gen}$')
+        plt.plot(alphap, betap, sgenp)
         plt.show()
         return
 
 
-
-
+if __name__ == '__main__':
+    mc = Microchannel()
+    mc.plotc()
