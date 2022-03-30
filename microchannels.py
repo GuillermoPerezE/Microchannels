@@ -91,6 +91,18 @@ class Microchannel():
     def beta(self):
         return self.w_c / self.w_w
 
+    @property
+    def sgen_ht(self):
+        return self.Q ** 2 * self.R_eq / (self.T_a * self.T_i)
+
+    @property
+    def sgen_ff(self):
+        return self.G_d * self.DeltaP_total / self.T_a
+
+    @property
+    def sgen(self):
+        return self.sgen_ht + self.sgen_ff
+
     def warning(prop):
         return 'You cannot set ', prop, ' explicitly'
 
