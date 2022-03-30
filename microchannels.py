@@ -55,7 +55,7 @@ class Microchannel():
         self.G = 7e-3
         self.nu = 1.58e-5
         self.cp = 1007
-        self.Pr = .71
+        # self.Pr = .71
         self.gamma = 1.4
         self.Rgas = 287.0028305
         self.rho = 1.1614
