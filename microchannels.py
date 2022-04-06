@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import materials
 
 
-# Guillermo, ver este video antes de continuar: https://www.youtube.com/watch?v=jCzT9XFZ5bw
-
 
 class Microchannel():
     # hidden properties
@@ -62,7 +60,7 @@ class Microchannel():
         # self.nu = 1.58e-5
         # self.cp = 1007
         # self.Pr = .71
-        # self.gamma = 1.4
+        self.gamma = 1.4
         self.Rgas = 287.0028305
         # self.rho = 1.1614
         # self.kf = 0.0261
@@ -253,72 +251,73 @@ class Microchannel():
         # Bejan's number
         return self.sgen_ht / self.sgen
 
+    # %%
+    @property
+    def csound(self):
+        return (self.gamma * self.Rgas * self.T_a) ** (1 / 2)
 
-    def soundspeed(self):
-        self.__csound = (self.gamma * self.Rgas * self.Ta) ** (1 / 2)
-        return self.__csound
+    #def alphasubc(self):
+    #    self.alpha = 2 * self.w_c / self.H_c
+    #    return self.alpha
 
-    def alphasubc(self):
-        self.alpha = 2 * self.w_c / self.H_c
-        return self.alpha
-
-    def fbeta(self):
-        self.beta = self.w_c / self.w_w
-        return self.beta
+    #def fbeta(self):
+    #    self.beta = self.w_c / self.w_w
+    #    return self.beta
 
     # def numberchannels(self):
     #     self.N = round(((self.W_d / 2) - self.w_w) / (self.w_c + self.w_w))
     #     return self.N
-
-    def hidraulicd(self):
+    @property
+    def D_h(self):
         ac = 2 * self.w_c * self.H_c
         p = 2 * (self.H_c + 2 * self.w_c)
-        self.__Dh = 4 * ac / p
-        return self.__Dh
+        return 4 * ac / p
 
-    def massflow(self):
-        self.__mdot = self.rho * self.G / (2 * self.numberchannels())
-        return self.__mdot
+    @property
+    def mdot(self):
+        return self._cmat.rho * self.G_d / (2 * self.N)
 
-    def flowavv(self):
-        self.Uavg = self.massflow() / (self.rho * self.w_c * self.H_c)
-        return self.Uavg
+    @property
+    def U_avg(self):
+        return self.mdot / (self._cmat.rho * self.w_c * self.H_c)
 
-    def machnum(self):
-        self.__Ma = self.flowavv() / self.soundspeed()
-        return self.__Ma
-
-    def reynolds(self):
-        self.ReDh = (self.hidraulicd() * self.flowavv()) / self.nu
-        return self.ReDh
+    @property
+    def Ma(self):
+        return self.U_avg / self.csound
 
 
+    #def reynolds(self):
+    #    self.ReDh = (self.hidraulicd() * self.flowavv()) / self.nu
+    #    return self.ReDh
 
-    def flowre(self):
-        if (self.Regime != 'laminar') and (self.Regime != 'turbulent'):
-            raise Exception('Regime must be laminar or turbulent')
-        return self.Regime
 
+    @property
+    def Regime(self):
+        if self.Re_D_tu < 2000:
+           return  'laminar'
+        else:
+            return 'turbulent'
+
+    @property
     def f(self):
         if (self.Regime == 'laminar'):
-            B = ((self.alphasubc() ** 2) + 1) / ((self.alphasubc() + 1) ** 2)
-            self.__f = ((3.2 * (self.reynolds() * self.hidraulicd() / self.L_d) ** (0.57)) ** 2 + (
-                        4.7 + 19.64 * B) ** 2) ** (1 / 2) / self.reynolds()
+            B = ((self.alpha ** 2) + 1) / ((self.alpha + 1) ** 2)
+            return ((3.2 * (self.Re_D_tu * self.D_h / self.L_d) ** (0.57)) ** 2 + (
+                        4.7 + 19.64 * B) ** 2) ** (1 / 2) / self.Re_D_tu
         else:
-            self.__f = 1 / (0.79 * np.log(self.reynolds()) - 1.64) ** 2
-        return self.__f
+            return 1 / (0.79 * np.log(self.Re_D_tu) - 1.64) ** 2
 
-    def nusseltnum(self):
+    @property
+    def Nu_Dh(self):
         if (self.Regime == 'laminar'):
-            self.__NuDh = 2.253 + 8.164 * (1 / (self.alphasubc() + 1)) ** (1.5)
+            return 2.253 + 8.164 * (1 / (self.alpha + 1)) ** (1.5)
         else:
-            self.__NuDh = (self.frictionf() / 2) * (self.reynolds() - 1000) * self.Pr / (
-                        1 + 12.7 * (self.frictionf() / 2) ** (0.5) * (self.Pr ** (2 / 3) - 1))
-        return self.__NuDh
+            return (self.f / 2) * (self.Re_D_tu - 1000) * self.Pr / (
+                        1 + 12.7 * (self.f / 2) ** (0.5) * (self.Pr ** (2 / 3) - 1))
 
-    def convection(self):
-        self.__havg = self.kf * self.nusseltnum() / self.hidraulicd()
-        return self.__havg
+    #def convection(self):
+    #    self.__havg = self.kf * self.nusseltnum() / self.hidraulicd()
+    #    return self.__havg
 
     # def fineff(self):
     #     mhc = np.sqrt(2 * (2 * self.w_w + self.L_d) * self.convection() / (self.k * 2 * self.w_w * self.L_d)) * self.H_c
@@ -386,35 +385,39 @@ class Microchannel():
     #     return self.__Be
 
     def plotc(self):
-        sgenp = np.arange(100)
-        alphap = np.arange(100)
-        betap = np.arange(100)
-
+        z = 0
+        sgenp = np.arange(10000)
+        wcp = np.arange(10000)
+        wwp = np.arange(10000)
         sgenp = sgenp.astype(float)
-        alphap = alphap.astype(float)
-        betap = betap.astype(float)
+        wcp = wcp.astype(float)
+        wwp = wwp.astype(float)
+        for x in range(100):
+            self.w_c = (250e-6 / 2) - (x * 1e-6)
+            self.w_w = (250e-6 / 2)
+            for y in range(100):
+                self.w_w = (250e-6 / 2) - (y * 1e-6)
+                sgenp[z] = self.sgen
+                wcp[z] = self.w_c
+                wwp[z] = self.w_w
+                z = z + 1
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        plt.xlabel('Wc')
+        plt.ylabel('Ww')
+        ax.set_zlabel(r'$\dot{S}_{gen}$')
+        ax.scatter(wcp, wwp, sgenp)
+
+        plt.show()
 
         # wc = np.linspace(125e-6, 0.0004, 100)
         # sgenp = []
-        wc = []
+        #wc = []
 
         # for wc_i in wc:
         #     self.wc = wc_i
         #     sgenp.append(self.tegr())
-
-        for x in range(100):
-            self.w_c = (250e-6 / 2) - (x * 1e-6)
-            wc.append(self.w_c)
-            sgenp[x] = self.tegr()
-            alphap[x] = self.alpha
-            betap[x] = self.beta
-
-        ax = plt.axes(projection='3d')
-        plt.xlabel(r'$\alpha$')
-        plt.ylabel(r'$\beta$')
-        ax.set_zlabel(r'$\dot{S}_{gen}$')
-        plt.plot(alphap, betap, sgenp)
-        plt.show()
 
         # # ax = plt.axes(projection='3d')
         # plt.xlabel(r'$w_c$')
