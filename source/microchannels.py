@@ -27,7 +27,7 @@ class Microchannel():
         self.G_d = 7e-3
 
         # Heat flux density (W/m2)
-        self.q = 5e4
+        self.q = 15e4
 
         # Geometry properties
         self.w_c = (250e-6 / 2)
@@ -128,7 +128,7 @@ class Microchannel():
 
     @property
     def T_b(self):
-        return self.T_s + self.R_b * self.Q
+        return self.T_s #+ self.R_b * self.Q
 
     @property
     def R_i(self):
@@ -138,12 +138,12 @@ class Microchannel():
     @property
     def T_i(self):
         # Interfacial temperature [K]
-        return self.T_b + self.R_i * self.Q
+        return self.T_b #+ self.R_i * self.Q
 
     @property
     def R_eq(self):
         # Equivalent thermal resistance [K/W]
-        return self.R_o + self.R_b + self.R_i
+        return self.R_o #+ self.R_b + self.R_i
 
     # %% Sgen_ff calculations
     @property
@@ -239,7 +239,7 @@ class Microchannel():
 
     @property
     def flow_regime(self):
-        return 'laminar' if self.Re_D_tu < 2300 else 'turbulent'
+        return 'laminar' #if self.Re_D_tu < 2300 else 'turbulent'
 
     @property
     # Friction coefficient
