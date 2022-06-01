@@ -128,7 +128,7 @@ class Microchannel():
 
     @property
     def T_b(self):
-        return self.T_s #+ self.R_b * self.Q
+        return self.T_s * self.Q #+ self.R_b * self.Q
 
     @property
     def R_i(self):
@@ -138,7 +138,7 @@ class Microchannel():
     @property
     def T_i(self):
         # Interfacial temperature [K]
-        return self.T_b #+ self.R_i * self.Q
+        return self.T_b * self.Q #+ self.R_i * self.Q
 
     @property
     def R_eq(self):
