@@ -302,7 +302,10 @@ class Microchannel():
         # plt.plot(np.array(wc), np.array(sgenp))
         # plt.show()
 
+#class Micromixer():
+
 
 if __name__ == '__main__':
     mc = Microchannel()
     mc.plotc()
+   # mm = Micromixer()
