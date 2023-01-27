@@ -36,7 +36,7 @@ with open('./collections/' + 'default.txt', 'r') as operators_file:
 prob = fun.get_formatted_problem(is_constrained=True)
 hyp = None
 
-for i in range(1,6):
+for i in range(16,21):
     del hyp
     hyp = hh.Hyperheuristic(heuristic_space=heuristic_space, problem=prob, file_label="MC_results1_Copper_Air_Stag_10_%d"%i, parameters=
                             dict(cardinality=3,                # Max. numb. of SOs in MHs, lvl:1

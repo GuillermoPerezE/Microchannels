@@ -128,7 +128,7 @@ class Microchannel():
 
     @property
     def T_b(self):
-        return self.T_s * self.Q #+ self.R_b * self.Q
+        return self.T_s * self.Q  #+ self.R_b * self.Q
 
     @property
     def R_i(self):
@@ -138,7 +138,7 @@ class Microchannel():
     @property
     def T_i(self):
         # Interfacial temperature [K]
-        return self.T_b * self.Q #+ self.R_i * self.Q
+        return self.T_b * self.Q  #+ self.R_i * self.Q
 
     @property
     def R_eq(self):
@@ -185,7 +185,7 @@ class Microchannel():
     @property
     def DeltaP_total(self):
         # Total Pressure Drop
-        return self.DeltaP_mh + self.DeltaP_tu
+        return self.DeltaP_mh  # + self.DeltaP_tu
 
     @property
     def Phi(self):
@@ -238,18 +238,22 @@ class Microchannel():
         return self.U_avg / self.U_avg_sound
 
     @property
+    def Re_D(self):
+        return self.U_avg * self.D_h / self._cmat.nu
+
+    @property
     def flow_regime(self):
-        return 'laminar' #if self.Re_D_tu < 2300 else 'turbulent'
+        return 'laminar' if self.Re_D < 2300 else 'turbulent'
 
     @property
     # Friction coefficient
     def f(self):
         if self.flow_regime == 'laminar':
             ab_constant = (self.alpha ** 2 + 1) / ((self.alpha + 1) ** 2)
-            return ((3.2 * (self.Re_D_tu * self.D_h / self.L_d) ** 0.57) ** 2 + (
-                        4.7 + 19.64 * ab_constant) ** 2) ** (1 / 2) / self.Re_D_tu
+            return ((3.2 * (self.Re_D * self.D_h / self.L_d) ** 0.57) ** 2 + (
+                        4.7 + 19.64 * ab_constant) ** 2) ** (1 / 2) / self.Re_D
         else:
-            return 1. / (0.79 * np.log(self.Re_D_tu) - 1.64) ** 2
+            return 1. / (0.79 * np.log(self.Re_D) - 1.64) ** 2
 
     @property
     # Nusselt number
@@ -257,7 +261,7 @@ class Microchannel():
         if self.flow_regime == 'laminar':
             return 2.253 + 8.164 * (1 / (self.alpha + 1)) ** 1.5
         else:
-            return (self.f / 2) * (self.Re_D_tu - 1000) * self.Pr / (
+            return (self.f / 2) * (self.Re_D - 1000) * self.Pr / (
                         1 + 12.7 * np.sqrt(self.f / 2) * (self.Pr ** (2 / 3) - 1))
 
     def plotc(self):
