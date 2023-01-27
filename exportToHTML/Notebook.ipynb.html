@@ -1,0 +1,105 @@
+<html>
+<head>
+<title>Notebook.ipynb</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #8c8c8c; font-style: italic;}
+.s1 { color: #080808;}
+.s2 { color: #1750eb;}
+.s3 { color: #0033b3;}
+.s4 { color: #067d17;}
+.s5 { color: #0037a6;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Notebook.ipynb</font>
+</center></td></tr></table>
+<pre><span class="s0">#%% md 
+</span><span class="s1"># CUSTOMHyS for Designing Microchannel Heat Sinks 
+</span><span class="s0">#%% md 
+</span><span class="s1">## 0. Packages' installation and loading 
+</span><span class="s0">#%% 
+</span><span class="s1">%pwd</span>
+<span class="s0">#%% md 
+</span><span class="s1">Instalamos el paquete de Customhys directo del repositorio 
+</span><span class="s0">#%% 
+</span><span class="s1">!pip3 install install customhys==</span><span class="s2">1.0.1</span><span class="s1">.dev1</span>
+<span class="s0">#%% md 
+</span><span class="s1">Cargamos los paquetes que vamos a utilizar 
+</span><span class="s0">#%% 
+</span><span class="s3">import </span><span class="s1">numpy </span><span class="s3">as </span><span class="s1">np</span>
+<span class="s3">from </span><span class="s1">microchannels </span><span class="s3">import </span><span class="s1">Microchannel</span>
+<span class="s3">from </span><span class="s1">materials </span><span class="s3">import </span><span class="s1">Copper, Air</span>
+<span class="s3">from </span><span class="s1">customhys </span><span class="s3">import </span><span class="s1">metaheuristic </span><span class="s3">as </span><span class="s1">mh</span>
+<span class="s0">#%% md 
+</span><span class="s1">## 1. Microchannel Heat Sink model preparation 
+En esta parte, preparamos el modelo para utilizarlo y evaluar una configuración de parámetros de diseño en la función objetivo, que en este caso será al generación de entropía. 
+</span><span class="s0">#%% 
+</span><span class="s3">class </span><span class="s1">MicrochannelDesign():</span>
+    <span class="s3">def </span><span class="s1">__init__(self):</span>
+        <span class="s1">self.model = Microchannel(base=Copper(), coolant=Air())</span>
+        <span class="s1">self.max_search_range = np.array([self.model.W_d/</span><span class="s2">10</span><span class="s1">, self.model.W_d/</span><span class="s2">10</span><span class="s1">, </span><span class="s2">0.005</span><span class="s1">])</span>
+        <span class="s1">self.min_search_range = np.array([</span><span class="s2">1e-24</span><span class="s1">, </span><span class="s2">1e-12</span><span class="s1">, </span><span class="s2">1e-8</span><span class="s1">])</span>
+        <span class="s1">self.func_name = </span><span class="s4">'Microchannel entropy generation model'</span>
+
+    <span class="s3">def </span><span class="s1">get_func_val(self, variables):</span>
+        <span class="s1">self.model.w_w = variables[</span><span class="s2">0</span><span class="s1">]</span>
+        <span class="s1">self.model.w_c = variables[</span><span class="s2">1</span><span class="s1">]</span>
+        <span class="s1">self.model.G_d = variables[</span><span class="s2">2</span><span class="s1">]</span>
+        <span class="s3">return </span><span class="s1">self.model.sgen</span>
+
+    <span class="s3">def </span><span class="s1">get_formatted_problem(self, is_constrained=</span><span class="s3">True</span><span class="s1">):</span>
+        <span class="s3">return </span><span class="s1">dict(function=self.get_func_val,</span>
+                    <span class="s1">boundaries=(self.min_search_range, self.max_search_range),</span>
+                    <span class="s1">is_constrained=is_constrained)</span>
+
+<span class="s1">fun = MicrochannelDesign()</span>
+<span class="s0">#%% md 
+</span><span class="s1">## 2. Metaheuristic preparation 
+</span><span class="s0">#%% 
+# Primero cargamos la colección de operadores</span>
+<span class="s3">with </span><span class="s1">open(</span><span class="s4">'./source/collections/' </span><span class="s1">+ </span><span class="s4">'default.txt'</span><span class="s1">, </span><span class="s4">'r'</span><span class="s1">) </span><span class="s3">as </span><span class="s1">operators_file:</span>
+    <span class="s1">heuristic_space = [eval(line.rstrip(</span><span class="s4">'</span><span class="s5">\n</span><span class="s4">'</span><span class="s1">)) </span><span class="s3">for </span><span class="s1">line </span><span class="s3">in </span><span class="s1">operators_file]</span>
+<span class="s0">#%% md 
+</span><span class="s1">Esta es la parte en donde, utilizando los operadores, ensamblamos la metaheurística a usar: 
+</span><span class="s0">#%% 
+# Metaheuristic 1: Random Search</span>
+<span class="s0"># heur = [('random_search', {'scale': 0.01, 'distribution': 'uniform'}, 'greedy')]</span>
+
+<span class="s0"># Metaheuristic 2: Particle Swarm &amp; Genetic Linear Crossover with Random Pairing and Metropolis Selection</span>
+<span class="s1">heur = [(</span><span class="s4">'swarm_dynamic'</span><span class="s1">, {</span><span class="s4">'factor'</span><span class="s1">: </span><span class="s2">0.7</span><span class="s1">, </span><span class="s4">'self_conf'</span><span class="s1">: </span><span class="s2">2.54</span><span class="s1">, </span><span class="s4">'swarm_conf'</span><span class="s1">: </span><span class="s2">2.56</span><span class="s1">, </span><span class="s4">'version'</span><span class="s1">: </span><span class="s4">'inertial'</span><span class="s1">, </span><span class="s4">'distribution'</span><span class="s1">: </span><span class="s4">'uniform'</span><span class="s1">}, </span><span class="s4">'all'</span><span class="s1">),</span>
+        <span class="s1">(</span><span class="s4">'genetic_crossover'</span><span class="s1">, {</span><span class="s4">'pairing'</span><span class="s1">: </span><span class="s4">'random'</span><span class="s1">, </span><span class="s4">'crossover'</span><span class="s1">: </span><span class="s4">'linear_0.5_0.5'</span><span class="s1">, </span><span class="s4">'mating_pool_factor'</span><span class="s1">: </span><span class="s2">0.4</span><span class="s1">}, </span><span class="s4">'metropolis'</span><span class="s1">)]</span>
+<span class="s0">#%% md 
+</span><span class="s1">Aquí terminamos de definirla empleando CUSTMHyS 
+ 
+</span><span class="s0">#%% 
+</span><span class="s1">met = mh.Metaheuristic(fun.get_formatted_problem(is_constrained=</span><span class="s3">True</span><span class="s1">), heur , num_iterations=</span><span class="s2">100</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">## 3. Run designing process 
+</span><span class="s0">#%% 
+# Aquí corremos la metaheurística seleccionada</span>
+<span class="s1">met.verbose = </span><span class="s3">True  </span><span class="s0"># Se puede comentar para que no muestre todo el log</span>
+<span class="s1">met.run()</span>
+<span class="s0">#%% md 
+</span><span class="s1">## 4. Results' visualization 
+</span><span class="s0">#%% md 
+</span><span class="s1">En esta primera gráfica, solo veremos la evolución de la función objetivo (generación de entropía) 
+</span><span class="s0">#%% 
+</span><span class="s3">import </span><span class="s1">matplotlib.pyplot </span><span class="s3">as </span><span class="s1">plt</span>
+
+<span class="s1">plt.plot(met.historical[</span><span class="s4">&quot;fitness&quot;</span><span class="s1">])</span>
+<span class="s1">plt.ylabel(</span><span class="s4">r'Entropy Generation (W/K)'</span><span class="s1">)</span>
+<span class="s1">plt.xlabel(</span><span class="s4">r'Iteration Number'</span><span class="s1">)</span>
+<span class="s1">plt.show()</span>
+<span class="s0">#%% 
+# from source import experiment as ex</span>
+<span class="s0"># expe = ex.Experiment()</span>
+<span class="s0"># expe.hh_config</span>
+<span class="s0"># expe.exp_config</span>
+<span class="s0"># expe.prob_config</span>
+<span class="s0"># expe.run()</span></pre>
+</body>
+</html>
